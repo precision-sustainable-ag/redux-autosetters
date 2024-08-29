@@ -4,6 +4,7 @@ export const set = {};
 export const get = {};
 
 export const createStore = (initialState, { afterChange = {}, reducers = {} }) => {
+  let processing = {};
   const funcs = {};
   const methods = {};
   const allkeys = {};
@@ -26,16 +27,20 @@ export const createStore = (initialState, { afterChange = {}, reducers = {} }) =
   getAllkeys(initialState);
 
   const processMethods = ((state, key) => {
-    if (methods[key]) {
+    if (methods[key] && !processing[key]) {
+      processing[key] = true;
       Object.keys(methods[key]).forEach((k) => {
         let st = state;
         k.split('.').slice(0, -1).forEach((key2) => {
           st = st[key2];
         });
         const l = k.includes('.') ? k.split('.').slice(-1)[0] : k;
-        st[l] = methods[key][k](state);
-        processMethods(state, k);
+        if (!processing[k]) {
+          st[l] = methods[key][k](state);
+          processMethods(state, k);
+        }
       });
+      processing[key] = false;
     }
   });
 
