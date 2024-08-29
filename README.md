@@ -4,15 +4,10 @@ redux-autosetters provides automatic setters and getters for all properties in t
 
 Here's an example temperature converter:
 
-<table>
-  <tr>
-    <th>Without redux-autosetters
-    <th>With redux-autosetters
-  </tr>
-  <tr>
-    <td style="vertical-align: top;">
+## Without redux-autosetters
 
 **store.jsx**
+
 ```javascript
 import { configureStore, createSlice } from '@reduxjs/toolkit';
 
@@ -37,25 +32,6 @@ export const store = configureStore({
   reducer: temperatureSlice.reducer,
 });
 ```
-    
-</td>
-<td style="vertical-align: top">
-
-**store.jsx**
-
-```javascript
-import { createStore } from 'redux-autosetters';
-
-const initialState = { celsius: 0, fahrenheit: 32 };
-
-export const store = createStore(initialState, {});
-export { set, get } from 'redux-autosetters';
-```
-
-</td>
-</tr>
-<tr>
-<td style="vertical-align: top">
 
 **app.jsx**
 ```javascript
@@ -94,7 +70,18 @@ const App = () => (
 export default App;
 ```
 
-<td style="vertical-align: top">
+## With redux-autosetters
+
+**store.jsx**
+
+```javascript
+import { createStore } from 'redux-autosetters';
+
+const initialState = { celsius: 0, fahrenheit: 32 };
+
+export const store = createStore(initialState, {});
+export { set, get } from 'redux-autosetters';
+```
 
 **app.jsx**
 
@@ -182,141 +169,3 @@ Using functional properties, the component can now be written like this:
   />
 </div>
 ```
-
-Here's the updated comparison, now using functional properties:
-
-<table>
-  <tr>
-    <th>Without redux-autosetters
-    <th>With redux-autosetters
-  </tr>
-  <tr>
-    <td style="vertical-align: top;">
-
-**store.jsx**
-```javascript
-import { configureStore, createSlice } from '@reduxjs/toolkit';
-
-const temperatureSlice = createSlice({
-  name: 'temperature',
-  initialState: { celsius: 0, fahrenheit: 32 },
-  reducers: {
-    toCelsius: (state, action) => {
-      state.celsius = ((action.payload - 32) * 5) / 9;
-      state.fahrenheit = action.payload;
-    },
-    toFahrenheit: (state, action) => {
-      state.celsius = action.payload;
-      state.fahrenheit = (action.payload * 9) / 5 + 32;
-    },
-  },
-});
-
-export const { toCelsius, toFahrenheit } = temperatureSlice.actions;
-
-export const store = configureStore({
-  reducer: temperatureSlice.reducer,
-});
-```
-    
-</td>
-<td style="vertical-align: top">
-
-**store.jsx**
-
-```javascript
-import { createStore } from './redux-autosetters';
-
-const initialState = {
-  celsius: (state) => ((state.fahrenheit - 32) * 5) / 9 || 0,
-  fahrenheit: (state) => (state.celsius * 9) / 5 + 32 || 32,
-};
-
-export const store = createStore(initialState, {});
-export { set, get } from './redux-autosetters';
-```
-
-</td>
-</tr>
-<tr>
-<td style="vertical-align: top">
-
-**app.jsx**
-```javascript
-import { Provider, useDispatch, useSelector } from 'react-redux';
-import { store, toCelsius, toFahrenheit } from './store';
-
-const TemperatureConverter = () => {
-  const { celsius, fahrenheit } = useSelector((state) => state);
-  const dispatch = useDispatch();
-
-  return (
-    <div>
-      Celsius:
-      <input
-        type="number"
-        value={celsius}
-        onChange={(e) => dispatch(toFahrenheit(+e.target.value))}
-      />
-      <br />
-      Fahrenheit:
-      <input
-        type="number"
-        value={fahrenheit}
-        onChange={(e) => dispatch(toCelsius(+e.target.value))}
-      />
-    </div>
-  );
-};
-
-const App = () => (
-  <Provider store={store}>
-    <TemperatureConverter />
-  </Provider>
-);
-
-export default App;
-```
-
-<td style="vertical-align: top">
-
-**app.jsx**
-
-```javascript
-import { Provider, useDispatch, useSelector } from 'react-redux';
-import { store, set } from './store';
-
-const TemperatureConverter = () => {
-  const { celsius, fahrenheit } = useSelector((state) => state);
-  const dispatch = useDispatch();
-
-  return (
-    <div>
-      Celsius:
-      <input
-        type="number"
-        value={celsius}
-        onChange={(e) => dispatch(set.celsius(+e.target.value))}
-      />
-      <br />
-      Fahrenheit:
-      <input
-        type="number"
-        value={fahrenheit}
-        onChange={(e) => dispatch(set.fahrenheit(+e.target.value))}
-      />
-    </div>
-  );
-};
-
-const App = () => (
-  <Provider store={store}>
-    <TemperatureConverter />
-  </Provider>
-);
-
-export default App;
-```
-
-  </tr>
-</table>
