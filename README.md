@@ -1,6 +1,6 @@
 # redux-autosetters
 
-redux-autosetters provides automatic setters and getters for all properties in the Redux store.
+**redux-autosetters** provides automatic setters and getters for all properties in the Redux store.
 
 Here's an example temperature converter:
 
@@ -13,20 +13,32 @@ import { configureStore, createSlice } from '@reduxjs/toolkit';
 
 const temperatureSlice = createSlice({
   name: 'temperature',
-  initialState: { celsius: 0, fahrenheit: 32 },
+  initialState: { celsius: 0, fahrenheit: 32, kelvin: 273.15 },
   reducers: {
-    toCelsius: (state, action) => {
-      state.celsius = ((action.payload - 32) * 5) / 9;
-      state.fahrenheit = action.payload;
+    setCelsius: (state, action) => {
+      const celsius = +action.payload;
+      state.celsius = celsius;
+      state.fahrenheit = (celsius * 9/5) + 32;
+      state.kelvin = celsius + 273.15;
     },
-    toFahrenheit: (state, action) => {
-      state.celsius = action.payload;
-      state.fahrenheit = (action.payload * 9) / 5 + 32;
+    setFahrenheit: (state, action) => {
+      const fahrenheit = +action.payload;
+      const celsius = (fahrenheit - 32) * 5/9;
+      state.celsius = celsius;
+      state.fahrenheit = fahrenheit;
+      state.kelvin = celsius + 273.15;
     },
-  },
+    setKelvin: (state, action) => {
+      const kelvin = +action.payload;
+      const celsius = kelvin - 273.15;
+      state.celsius = celsius;
+      state.fahrenheit = (celsius * 9/5) + 32;
+      state.kelvin = kelvin;
+    }
+  }
 });
 
-export const { toCelsius, toFahrenheit } = temperatureSlice.actions;
+export const { setCelsius, setFahrenheit, setKelvin } = temperatureSlice.actions;
 
 export const store = configureStore({
   reducer: temperatureSlice.reducer,
@@ -36,10 +48,10 @@ export const store = configureStore({
 **app.jsx**
 ```javascript
 import { Provider, useDispatch, useSelector } from 'react-redux';
-import { store, toCelsius, toFahrenheit } from './store';
+import { store, setCelsius, setFahrenheit, setKelvin } from './store';
 
 const TemperatureConverter = () => {
-  const { celsius, fahrenheit } = useSelector((state) => state);
+  const { celsius, fahrenheit, kelvin } = useSelector((state) => state);
   const dispatch = useDispatch();
 
   return (
@@ -48,14 +60,21 @@ const TemperatureConverter = () => {
       <input
         type="number"
         value={celsius}
-        onChange={(e) => dispatch(toFahrenheit(+e.target.value))}
+        onChange={(e) => dispatch(setCelsius(+e.target.value))}
       />
       <br />
       Fahrenheit:
       <input
         type="number"
         value={fahrenheit}
-        onChange={(e) => dispatch(toCelsius(+e.target.value))}
+        onChange={(e) => dispatch(setFahrenheit(+e.target.value))}
+      />
+      <br />
+      Kelvin:
+      <input
+        type="number"
+        value={kelvin}
+        onChange={(e) => dispatch(setKelvin(+e.target.value))}
       />
     </div>
   );
@@ -75,12 +94,12 @@ export default App;
 **store.jsx**
 
 ```javascript
-import { createStore } from 'redux-autosetters';
+import { createStore } from './redux-autosetters';
 
-const initialState = { celsius: 0, fahrenheit: 32 };
+const initialState = { celsius: 0, fahrenheit: 32, kelvin: 273.15 };
 
 export const store = createStore(initialState, {});
-export { set, get } from 'redux-autosetters';
+export { set, get } from './redux-autosetters';
 ```
 
 **app.jsx**
@@ -90,7 +109,7 @@ import { Provider, useDispatch, useSelector } from 'react-redux';
 import { store, set } from './store';
 
 const TemperatureConverter = () => {
-  const { celsius, fahrenheit } = useSelector((state) => state);
+  const { celsius, fahrenheit, kelvin } = useSelector((state) => state);
   const dispatch = useDispatch();
 
   return (
@@ -100,8 +119,10 @@ const TemperatureConverter = () => {
         type="number"
         value={celsius}
         onChange={(e) => {
-          dispatch(set.celsius(+e.target.value));
-          dispatch(set.fahrenheit((+e.target.value * 9) / 5 + 32));
+          const celsius = +e.target.value;
+          dispatch(set.celsius(celsius));
+          dispatch(set.fahrenheit((celsius * 9/5) + 32));
+          dispatch(set.kelvin(celsius + 273.15));
         }}
       />
       <br />
@@ -110,8 +131,24 @@ const TemperatureConverter = () => {
         type="number"
         value={fahrenheit}
         onChange={(e) => {
-          dispatch(set.fahrenheit(+e.target.value));
-          dispatch(set.celsius(((+e.target.value - 32) * 5) / 9));
+          const fahrenheit = +e.target.value;
+          const celsius = (fahrenheit - 32) * 5/9;
+          dispatch(set.celsius(celsius));
+          dispatch(set.fahrenheit(fahrenheit));
+          dispatch(set.kelvin(celsius + 273.15));
+        }}
+      />
+      <br />
+      Kelvin:
+      <input
+        type="number"
+        value={kelvin}
+        onChange={(e) => {
+          const kelvin = +e.target.value;
+          const celsius = kelvin - 273.15;
+          dispatch(set.celsius(celsius));
+          dispatch(set.fahrenheit((celsius * 9/5) + 32));
+          dispatch(set.kelvin(kelvin));
         }}
       />
     </div>
@@ -127,45 +164,221 @@ const App = () => (
 export default App;
 ```
 
-  </tr>
-</table>
-
 **Notice how the calculations have shifted from the store to the component.**
 
-However, this isn't strictly necessary. With redux-autosetters, you can keep these calculations in the store by using functional properties—something typically not allowed in standard Redux:
+However, this isn't strictly necessary. With **redux-autosetters**, you can keep these calculations in the store by using functional properties — something typically not allowed in standard Redux:
 
 ```javascript
 const initialState = {
   celsius: (state) => ((state.fahrenheit - 32) * 5) / 9 || 0,
-  fahrenheit: (state) => (state.celsius * 9) / 5 + 32 || 32,
+  kelvin: (state) => state.celsius + 273.15,
+  fahrenheit: (state) => ((state.kelvin - 273.15) * 9) / 5 + 32,
 };
 ```
 
-Note the use of `||` to specify default values.
+Notice the use of `||` to set the default value for `celsius`. Defaults weren't provided for `kelvin` or `fahrenheit`, because **redux-autosetters** will automatically initialize them based on the `celsius` value.
 
-Whenever `celsius` changes, `fahrenheit` will automatically update, and vice versa.
+* When `celsius` is updated, `kelvin` is calculated since it depends on `celsius`.  Then, `fahrenheit` is calculated based on `kelvin`.
+* When `kelvin` is updated, `fahrenheit` is calculated since it depends on `kelvin`.  Then, `celsius` is calculated based on `fahrenheit`.
+* When `fahrenheit` is updated, `celsius` is calculated since it depends on `fahrenheit`.  Then, `kelvin` is calculated based on `celsius`.
 
-To prevent infinite loops, redux-autosetters ensures that a property won't be recalculated if it’s already being used in the current calculation.
+To avoid infinite loops, **redux-autosetters** ensures that a property won't be recalculated if it’s already being used in the current calculation.
 
-For instance, changing `celsius` recalculates `fahrenheit`, but this update to `fahrenheit` won't trigger another `celsius` recalculation.
-However, if `fahrenheit` were referenced in a third functional property, that property _would_ be recalculated.
+For example, when `celsius` is changed, it calculates `kelvin`, which calculates `fahrenheit`. However, this change to `fahrenheit` will not cause another recalculation of `celsius`.
 
 Using functional properties, the component can now be written like this:
 
 ```javascript
-<div>
-  Celsius:
-  <input
-    type="number"
-    value={celsius}
-    onChange={(e) => dispatch(set.celsius(+e.target.value));}
-  />
-  <br />
-  Fahrenheit:
-  <input
-    type="number"
-    value={fahrenheit}
-    onChange={(e) => dispatch(set.fahrenheit(+e.target.value));}
-  />
-</div>
+const TemperatureConverter = () => {
+  const { celsius, fahrenheit, kelvin } = useSelector((state) => state);
+  const dispatch = useDispatch();
+
+  return (
+    <div>
+      Celsius:
+      <input
+        type="number"
+        value={celsius}
+        onChange={(e) => dispatch(set.celsius(+e.target.value))}
+      />
+      <br />
+      Fahrenheit:
+      <input
+        type="number"
+        value={fahrenheit}
+        onChange={(e) => dispatch(set.fahrenheit(+e.target.value))}
+      />
+      <br />
+      Kelvin:
+      <input
+        type="number"
+        value={kelvin}
+        onChange={(e) => dispatch(set.kelvin(+e.target.value))}
+      />
+    </div>
+  );
+};
 ```
+
+### Side-by-side comparison (best viewed in VS Code):
+
+<table>
+  <thead>
+    <tr><th>Without redux-autosetters<th>With redux-autosetters
+  </thead>
+  <tbody>
+    <tr>
+      <td style="vertical-align: top">
+
+**store.jsx**
+
+```javascript
+import { configureStore, createSlice } from '@reduxjs/toolkit';
+
+const temperatureSlice = createSlice({
+  name: 'temperature',
+  initialState: { celsius: 0, fahrenheit: 32, kelvin: 273.15 },
+  reducers: {
+    setCelsius: (state, action) => {
+      const celsius = +action.payload;
+      state.celsius = celsius;
+      state.fahrenheit = (celsius * 9/5) + 32;
+      state.kelvin = celsius + 273.15;
+    },
+    setFahrenheit: (state, action) => {
+      const fahrenheit = +action.payload;
+      const celsius = (fahrenheit - 32) * 5/9;
+      state.celsius = celsius;
+      state.fahrenheit = fahrenheit;
+      state.kelvin = celsius + 273.15;
+    },
+    setKelvin: (state, action) => {
+      const kelvin = +action.payload;
+      const celsius = kelvin - 273.15;
+      state.celsius = celsius;
+      state.fahrenheit = (celsius * 9/5) + 32;
+      state.kelvin = kelvin;
+    }
+  }
+});
+
+export const { setCelsius, setFahrenheit, setKelvin } = temperatureSlice.actions;
+
+export const store = configureStore({
+  reducer: temperatureSlice.reducer,
+});
+```
+</td>
+<td style="vertical-align: top">
+
+**store.jsx**
+
+```javascript
+import { createStore } from './redux-autosetters';
+
+const initialState = {
+  celsius: (state) => ((state.fahrenheit - 32) * 5) / 9 || 0,
+  kelvin: (state) => state.celsius + 273.15,
+  fahrenheit: (state) => ((state.kelvin - 273.15) * 9) / 5 + 32 || 32,
+};
+
+export const store = createStore(initialState, {});
+export { set, get } from './redux-autosetters';
+```
+
+<tr>
+  <td style="vertical-align: top">
+
+**app.jsx**
+
+```javascript
+import { Provider, useDispatch, useSelector } from 'react-redux';
+import { store, setCelsius, setFahrenheit, setKelvin } from './store';
+
+const TemperatureConverter = () => {
+  const { celsius, fahrenheit, kelvin } = useSelector((state) => state);
+  const dispatch = useDispatch();
+
+  return (
+    <div>
+      Celsius:
+      <input
+        type="number"
+        value={celsius}
+        onChange={(e) => dispatch(setCelsius(+e.target.value))}
+      />
+      <br />
+      Fahrenheit:
+      <input
+        type="number"
+        value={fahrenheit}
+        onChange={(e) => dispatch(setFahrenheit(+e.target.value))}
+      />
+      <br />
+      Kelvin:
+      <input
+        type="number"
+        value={kelvin}
+        onChange={(e) => dispatch(setKelvin(+e.target.value))}
+      />
+    </div>
+  );
+};
+
+const App = () => (
+  <Provider store={store}>
+    <TemperatureConverter />
+  </Provider>
+);
+
+export default App;
+```
+</td>
+<td style="vertical-align: top">
+
+**app.jsx**
+
+```javascript
+import { Provider, useDispatch, useSelector } from 'react-redux';
+import { store, set } from './store';
+
+const TemperatureConverter = () => {
+  const { celsius, fahrenheit, kelvin } = useSelector((state) => state);
+  const dispatch = useDispatch();
+
+  return (
+    <div>
+      Celsius:
+      <input
+        type="number"
+        value={celsius}
+        onChange={(e) => dispatch(set.celsius(+e.target.value))}
+      />
+      <br />
+      Fahrenheit:
+      <input
+        type="number"
+        value={fahrenheit}
+        onChange={(e) => dispatch(set.fahrenheit(+e.target.value))}
+      />
+      <br />
+      Kelvin:
+      <input
+        type="number"
+        value={kelvin}
+        onChange={(e) => dispatch(set.kelvin(+e.target.value))}
+      />
+    </div>
+  );
+};
+
+const App = () => (
+  <Provider store={store}>
+    <TemperatureConverter />
+  </Provider>
+);
+
+export default App;
+```
+  </tbody>
+</table>
