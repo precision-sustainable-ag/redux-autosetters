@@ -2,6 +2,147 @@
 
 **redux-autosetters** provides automatic setters and getters for all properties in the Redux store.
 
+Example:
+
+<table>
+  <thead>
+    <tr><th>Without redux-autosetters<th>With redux-autosetters
+  </thead>
+  <tbody>
+    <tr>
+      <td style="vertical-align: top">
+
+**store.jsx**
+
+```javascript
+import {
+  configureStore,
+  createSlice,
+} from '@reduxjs/toolkit';
+
+const temperatureSlice = createSlice({
+  name: 'temperature',
+  initialState: { temperature: 0 },
+  reducers: {
+    setTemperature: (state, action) => {
+      state.temperature = +action.payload;
+    }
+  }
+});
+
+export const { setTemperature } = temperatureSlice.actions;
+
+export const store = configureStore({
+  reducer: temperatureSlice.reducer,
+});
+```
+</td>
+<td zstyle="vertical-align: top">
+
+**store.jsx**
+
+```javascript
+import { createStore } from './redux-autosetters';
+
+const initialState = { temperature };
+
+export const store = createStore(initialState, {});
+export { set, get } from './redux-autosetters';
+&#8203;
+&#8203;
+&#8203;
+&#8203;
+&#8203;
+&#8203;
+&#8203;
+&#8203;
+&#8203;
+&#8203;
+&#8203;
+&#8203;
+&#8203;
+&#8203;
+```
+
+<tr>
+  <td style="vertical-align: top">
+
+**app.jsx**
+
+```javascript
+import {
+  Provider, useDispatch, useSelector,
+} from 'react-redux';
+
+import { store, setTemperature } from './store';
+
+const Temperature = () => {
+  const { temperature } = useSelector((state) => state);
+  const dispatch = useDispatch();
+
+  return (
+    <div>
+      Temperature:
+      <input
+        type="number"
+        value={temperature}
+        onChange={(e) => {
+          dispatch(setTemperature(+e.target.value))
+        }}
+      />
+    </div>
+  );
+};
+
+const App = () => (
+  <Provider store={store}>
+    <Temperature />
+  </Provider>
+);
+
+export default App;
+```
+</td>
+<td style="vertical-align: top">
+
+**app.jsx**
+
+```javascript
+import {
+  Provider, useDispatch, useSelector
+} from 'react-redux';
+
+import { store, set } from './store';
+
+const Temperature = () => {
+  const { temperature } = useSelector((state) => state);
+  const dispatch = useDispatch();
+
+  return (
+    <div>
+      Temperature:
+      <input
+        type="number"
+        value={celsius}
+        onChange={(e) => {
+          dispatch(set.temperature(+e.target.value))
+        }}
+      />
+    </div>
+  );
+};
+
+const App = () => (
+  <Provider store={store}>
+    <Temperature />
+  </Provider>
+);
+
+export default App;
+```
+  </tbody>
+</table>
+
 Here's an example temperature converter:
 
 ## Without redux-autosetters
